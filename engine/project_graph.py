@@ -24,31 +24,35 @@ def build_project_graph(components):
 
 
 def get_buildable_components(graph, built_components):
-    """La fonction permet d'afficher l'ensemble des unités fonctionnelles déja réalisées
 
-    Args:
-        graph graphique networkx: représente l'ensemble des relations de dépendance dans notre réseau
-        built_components: set comprenant les unités fonctionnelles déja réalisées
-
-    Returns:
-        retourne une liste d'unités potentiellement réalisablmes avec le financement à l'instant T
-    """
-    buildable: list = []
+    buildable = []
 
     for node in graph.nodes:
+        
+        # liste des dépendances pour chaque noeud
+        predecessors = list(graph.predecessors(node))
 
-        # ignorer ce qui est déjà construit
+        # ignorer déjà construits
         if node in built_components:
-            continue
-
-        # récupérer les dépendances
-        dependencies = list(graph.predecessors(node))
-
-        # vérifier si toutes les dépendances sont construites
-        if all(dep in built_components for dep in dependencies):
-
-            buildable.append(node)
-
+            pass
+        
+        # si pas encore construit, on vérifie les dépendances
+        else:
+            # si dépendances il y a 
+            if predecessors:
+                # on vérifie pour chaque dépendance si elle est réalisée
+                for dep in predecessors:
+                    # si elle est réalisée
+                    if dep in built_components:
+                        buildable.append(node)
+                    # sinon
+                    else:
+                        pass
+                    
+            # si pas de dépendances
+            else:
+                buildable.append(node)
+                
     return buildable
 
 
