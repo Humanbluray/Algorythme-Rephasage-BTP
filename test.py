@@ -1,6 +1,8 @@
-mon_set: set = set()
+# units = input("entrez les id des unités déja construites...: ")
+print(list(range(1, 8)))
 
-mon_set.add(2)
-mon_set.add(3)
-mon_set.remove(3)
-print(mon_set)
+# while units not in range(1, 8):
+#     print("no")
+    
+
+print('yes')

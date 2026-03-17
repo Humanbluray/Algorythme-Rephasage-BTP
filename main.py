@@ -1,93 +1,225 @@
 from data.excel_loader import load_project_data
 from engine.project_graph import build_project_graph, get_buildable_components, critical_path, project_duration
+from engine.finance import allocate_budget
 import matplotlib.pyplot as plt 
 import networkx as nx 
 import time
 
 
-# Module CPM
-# __________________________________________________________________________________________________________________________________
+def formater_entier(nombre):
+    # On utilise l'astuce du formatage avec une virgule, 
+    # puis on remplace la virgule par un espace.
+    return f"{nombre:,}".replace(",", " ")
 
-# I-1. On lit le fichier excel avce noptre fonction de lecture
-print("Lecture des données du fichier excel")
+
+# Variables globales...
 data = load_project_data("Project.xlsx")
-print("1- lecture du fichier excel du projet et de ses composants")
-print("------------------------------------------------------------------------")
-print("                                                                        ")
-time.sleep(3)
-
-#________________________________________________________________________________________
-# I-2. Affichage des donées extraites de notre fichier
-print("2- Affichage des données de notre fichier")
-print(f"Nom du projet: {data["parameters"].name}") # on affiche le nom du projet
-print(f"Nombre d'unités fonctionnelles: {len(data["components"])}") # On affiche le nombre d'unités fonctionnelles
-
-# on lit les informations sur les composants (unités fonctionnelles)
-print("Informations sur les unités fonctionnelles et leur dépendances")
-for i, item in enumerate(data["components"]):
-    print(f"{i} - {item.name} - {item.cost} - {item.dependency_id} - {item.strategic_value}")
-    
-print("------------------------------------------------------------------------")
-print("                                                                        ")
-time.sleep(3)
-
-
-#________________________________________________________________________________________
-# I-3. On crée le graphe mettant en exergue le réseau de dépendances
-print("3- Créatin du graphe en mettant en exergue les dépendances")
 components = data["components"]
 graph = build_project_graph(components)
-
-# exemple pour vérifier les dépendances
-# print("nodes", graph.nodes)
-print("On affiche tous les Noeuds")
-print("nodes", graph.nodes(data=True))
-
-#les dépendances de chaque étape
-print("On affiche toutes les arêtes")
-print("edges", graph.edges)
+built_components: set = set()
 
 
-# Affiche la liste des dépendance de l'unité 2
-unit = int(input("Veuillez entrer l'id d'une unité fonctionnelle: "))
-print(f"dépendance de l'unité {unit}", list(graph.predecessors(unit)))
+def show_project_settings():
+    global data
+    print("PARAMETRES DU PROJET")
+    print(f"Nom du projet: ") # on affiche le nom du projet
+    print(f"budget intial du projet {data["parameters"].budget}")
+    print(f"Nombre d'unités fonctionnelles: {len(data["components"])}") # On affiche le nombre d'unités fonctionnelles
+    print("------------------------------------------------------------------------------")
+    print(" ")
+    print("retour au menu")
+    time.sleep(3)
+    start_program()
+    
 
-if graph.predecessors(unit):
-    for dep in graph.predecessors(unit):
-        print(f"Nom de l'unité {graph.nodes[dep]["name"]}")
-        print(f"Coût de l'unité {graph.nodes[dep]["cost"]} FCFA")
-        print(f"Valeur stratégique {graph.nodes[dep]["value"]}")
-else:
-    print("pas de dépendance pour cette unité")
+def show_nodes():
+    global graph, components, data
+    print("Tous les noeuds du projet".upper())
+    print(graph.nodes)
+    print("                                                                    ")
+    print("Informations sur les unités fonctionnelles (noeuds) et leur dépendances")
+    for i, item in enumerate(data["components"]):
+        print(f"{i} - {item.name}")
+        print(f"Coût de l'unité: {formater_entier(item.cost)} FCFA")
+        print(f"Dépendance de l'unité: {item.dependency_id}")    
+        print(f"Valeur stratégique: {item.strategic_value}")
+        print("------------------------------------------------------------------------")
+    
+    print(" ")
+    print("retour au menu")
+    time.sleep(3)
+    start_program()
+        
+
+def show_dependencies():
+    global graph, components, data  
+    print("ARETES DU PROJET")
+    print(graph.edges)   
+    
+    for edge in graph.edges:
+        print(f"{edge[1]} - {graph.nodes[edge[1]]['name']} dépend de {edge[0]} - {graph.nodes[edge[0]]['name']}")  
+
+    unit = int(input("Veuillez entrer l'id d'une unité fonctionnelle: "))
+    if graph.predecessors(unit):
+        print(f"{unit} {graph.nodes[unit]['name']} a pour dépendance")
+        for dep in graph.predecessors(unit):
+            print(f"Nom de l'unité {graph.nodes[dep]["name"]}")
+            print(f"Coût de l'unité {formater_entier(graph.nodes[dep]["cost"])} FCFA")
+            print(f"Valeur stratégique {graph.nodes[dep]["value"]}")
+    else:
+        print("pas de dépendance pour cette unité")
+        
+    print("------------------------------------------------------------------------------")
+    print(" ")
+    print("retour au menu")
+    time.sleep(3)
+    start_program()
+    
+
+def show_project_graph():
+    print("pas encore disponible".upper())
+    print("------------------------------------------------------------------------------")
+    print(" ")
+    print("retour au menu")
+    time.sleep(3)
+    start_program()
 
 
-print("------------------------------------------------------------------------")
-print("                                                                        ")
-time.sleep(3)
+def show_critical_path():
+    print("le chemin critique".upper())
+    global graph
+    cp = critical_path(graph)
+    
+    print("Chemin critique:", cp)
+    print("détail chemin critique")
+    
+    for node in cp:
+        print("Noeud: ", node)
+        print(f"Nom: {graph.nodes[node]["name"]}")
+        print(f"Coût: {formater_entier(graph.nodes[node]["cost"])} FCFA")
+        print(f"Valeur stratégique: {graph.nodes[node]["value"]}")
+        print('*************************************************')
+    
+    print("------------------------------------------------------------------------------")
+    print(" ")
+    print("retour au menu")
+    time.sleep(3)
+    start_program()
+    return cp
+
+
+def show_buildables():
+    print("unités réalisables à l'état initial du projet".upper())
+    global built_components, graph
+    buildable = get_buildable_components(graph, built_components) 
+    
+    for unit in buildable:
+        print(f"{unit} - {graph.nodes[unit]['name']}")
+    
+    print("------------------------------------------------------------------------------")
+    print(" ")
+    print("retour au menu")
+    time.sleep(3)
+    start_program()
+    
+
+def simulate_decision():
+    global built_components, graph
+    print("SIMULATION")
+    print("Vous allez entrer les unités déja construites en les séparant d'une virgule")
+    units = input("entrez les id des unités déja construites...: ")
+    
+    # 2. On découpe la chaîne à chaque virgule -> devient ["10", " 20", " 30"]
+    liste_chaines = units.split(",")
+
+    # 3. On convertit chaque morceau en entier (int) et on nettoie les espaces
+    liste_nombres = [int(n.strip()) for n in liste_chaines]
+    print(liste_nombres)
+    
+    for nb in liste_nombres:
+        built_components.add(nb)
+        
+    print("composants construits :", built_components)
+    
+    entree_budget = int(input('Entrez le budget disponible en (millions de FCFA)...: '))
+    budget = 1000000 * entree_budget
+    print(f"Bien. notre budget disponible est de : {formater_entier(budget)} FCFA")
+    
+    buildable = get_buildable_components(graph, built_components)
+    selected, spent = allocate_budget(graph, buildable, built_components, budget)
+    
+    print("selected: ", selected)
+    
+    print("unités finançables avec le budget et les containtes")
+    for dep in selected:
+        print(f"{dep} - {graph.nodes[dep]['name']}")
+        
+    print("Budget spent:", spent)
+    print("------------------------------------------------------------------------------")
+    print(" ")
+    print("retour au menu")
+    time.sleep(3)
+    start_program()
+    
+    
+def start_program():
+    """Fonction de lancement du programme"""
+    # initailisation de certaines variables globales...
+    built_components: set = set()
+    
+    print("programme de tets d'algorythme prédictif BTP...")
+    print("à ce stade, le programme a lu le fichier project.xlsx qui contient toutes les données: \nque voulez vous faire?")
+    print(" ")
+    print("Menu______________________________")
+    print("1- paramètres du projet")
+    print("2- Afficher les noeuds du projet avec les détails pour chaque noeud")
+    print("3- Afficher les relations de dépendance entre les différents noeuds")
+    print("4- Graphe du projet")
+    print("5- Chemin critique du projet")
+    print("6- Afficher les unités constructibles")
+    print("7- Simulation de décision")
+    print("")
+
+    choice = int(input("Entre le numéro du menu que vous voulez explorer: "))
+    while choice not in list(range(1, 8)):
+        choice = int(input("Entre le numéro du menu que vous voulez explorer: "))
+    
+    if choice == 1:
+        show_project_settings()
+    elif choice == 2:
+        show_nodes()
+    elif choice == 3:
+        show_dependencies()
+    elif choice == 4:
+        show_project_graph()
+    elif choice == 5:
+        show_critical_path()
+    elif choice == 6:
+        show_buildables()
+    else:
+        simulate_decision()
+        
+    # options = {
+    #     1: show_project_settings(),
+    #     2: show_nodes(),
+    #     3: show_dependencies(),
+    #     4: show_project_graph(),
+    #     5: show_critical_path(),
+    #     6: show_buildables(),
+    #     7: simulate_decision()
+    # }
+    
+    # options[choice]
+    print("")
+    print("---------------------------------------------------------")
+    print("")
+
+start_program()
 
 # _____________________________________________________________________________________________
 # I-4. On lance la fonction qui va ressortir toutes les unités potentiellement réalisables    
 
-print("4- unités réalisables")
-built_components: set = set()  # Set qui va contenir les id des unités déja construites...
 
-buildable = get_buildable_components(graph, built_components) # Notre fonction qui détermine qui es tréalisable ou pas
-print(f"Unités réalisables {buildable}")
-for unit in buildable:
-    print(f"{unit} - {graph.nodes[unit]['name']}")
-
-
-# print("buildbales ", buildable)
-
-# on simule la construction de l'unité numéro 1
-built_components = {1}
-buildable = get_buildable_components(graph, built_components) # Notre fonction qui détermine qui es tréalisable ou pas
-print(f"Si l'unité 1 est construite: {buildable}")
-# print("buildbales ", buildable)
-
-print("les unités finançables")
-for unit in buildable:
-    print(f"{unit} - {graph.nodes[unit]['name']}")
 
 
 # on va afficher le graphe du projet hospitalier pour visaaliser les dépendances
@@ -110,52 +242,3 @@ for unit in buildable:
 # ) 
 # plt.title('Hôpital')
 # plt.show()
-
-print("------------------------------------------------------------------------")
-print("                                                                        ")
-
-time.sleep(3)
-
-
-# I-6. calcul du chemin critique, quels unités construire en priorité en fonction de la durée
-cp = critical_path(graph)
-print("Chemin critique:", cp)
-print("chemin critique")
-for node in cp:
-    print("Noeud: ", node)
-    print('_______________________________________________')
-    print(f"Nom: {graph.nodes[node]["name"]}")
-    print('_______________________________________________')
-    print(f"Coût: {graph.nodes[node]["cost"]} FCFA")
-    print('_______________________________________________')
-    print(f"Valeur stratégique: {graph.nodes[node]["value"]}")
-    
-
-# Durée du projet...
-# print("Durée totale du projet: ", project_duration(graph))
-
-print("------------------------------------------------------------------------")
-print("                                                                        ")
-
-
-# II - Module Finances
-# __________________________________________________________________________________________________________________________________
-# cette étape va calculer le budget disponible, le stress financier et la capacité d'investissement
-# c'est elle qui décidera quelle unité du projet foinancer avec les fonds disponibles
-
-from engine.finance import allocate_budget
-budget = 600000000
-
-# on reinitialise les unités construites à 0
-built_components.remove(1)
-buildable = get_buildable_components(graph, built_components)
-
-selected, spent = allocate_budget(graph, buildable, built_components, budget)
-
-print(f"budget : {budget} FCFA")
-for dep in selected:
-    print(f"{dep} - {graph.nodes[dep]['name']}")
-    
-print("Budget spent:", spent)
- 
- 
